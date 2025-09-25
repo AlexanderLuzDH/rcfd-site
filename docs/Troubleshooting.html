@@ -1,0 +1,44 @@
+<!doctype html><html lang="en"><meta charset="utf-8"><title>Troubleshooting</title><style>body{font-family:system-ui,Segoe UI,Arial,sans-serif;margin:2rem;line-height:1.6;max-width:980px} pre,code{background:#f6f8fa;padding:.2rem .4rem;border-radius:4px}</style><body><h1 id="troubleshooting-error-codes">Troubleshooting (Error codes)</h1>
+<p>Each code lists the symptom and fix. All commands support <code>--json</code> to aid automation.</p>
+<ul>
+<li>E001: Not tall‑skinny (n &lt; d)</li>
+<li>Fix: Use baseline LSQR/QR, or reduce d, or transpose if appropriate. The tool may auto bail‑out.</li>
+<li>E002: Matrix load failed (mm:/npz:/npy:)</li>
+<li>Fix: Check path/prefix; for Matrix Market install SciPy; for CSR npz ensure keys data/indices/indptr/shape.</li>
+<li>E003: Missing SciPy</li>
+<li>Fix: <code>pip install scipy</code> (needed for LSQR/LSMR/Matrix Market/QR baselines).</li>
+<li>E004: Missing scikit‑learn</li>
+<li>Fix: <code>pip install scikit-learn</code> (needed for some real datasets).</li>
+<li>E005: Console not UTF‑8</li>
+<li>Fix: Prefer <code>--json</code> or <code>--ascii</code>/<code>--ascii-default</code>; set UTF‑8 per BenchmarkGuide.</li>
+<li>E006: Sketch overflow RAM</li>
+<li>Fix: Add <code>--spill-dir</code> to memmap buffer; increase <code>--shrink-mult</code>; try <code>--sketch-dtype float32</code>.</li>
+<li>E007: No speedup (iterations ↓ but time ≈)</li>
+<li>Fix: Try reuse (<code>--repeats&gt;1</code> / save+load precond), or larger d, or ill‑conditioned case; consider <code>--precond-type blockdiag</code>.</li>
+<li>E008: Slow dense path</li>
+<li>Fix: Tune <code>--dense-chunk-size</code>; threads compare <code>--threads-compare 1,2</code>.</li>
+<li>E009: Numerical warning in Cholesky</li>
+<li>Fix: Raise <code>--precond-min-ridge</code> slightly (e.g., 1e-7→1e-6); keep float64 for factorization.</li>
+<li>E010: Invalid epsilon</li>
+<li>Fix: Choose ε in (0,1); use <code>--eps auto</code> or <code>rcfd-pcg --recommend</code>.</li>
+<li>E011: Timeout in service</li>
+<li>Fix: Increase <code>RCFD_SERVICE_SOLVE_TIMEOUT_S</code>; reduce problem size; ensure CPU pinning; check BLAS threads.</li>
+<li>E012: GPU unavailable</li>
+<li>Fix: Install correct CuPy wheel; verify <code>getDeviceCount()&gt;0</code>; GPU auto‑chooser uses CPU unless d≥1024 + device exists.</li>
+<li>E013: MemoryError building Gram (very large d)</li>
+<li>Fix: Use block‑diag preconditioner (<code>--precond-type blockdiag --num-col-blocks K</code>) and/or distributed sketch (see roadmap).</li>
+<li>E014: Huge variance in timings</li>
+<li>Fix: Pin BLAS threads to 1; warm up runs; avoid other load; use “contention‑safe” profile (docs).</li>
+<li>E015: Bad input shapes (A,b)</li>
+<li>Fix: Ensure <code>b.shape[0] == A.shape[0]</code>; vectorize b; for CSR use <code>tocsr()</code>.</li>
+<li>E016: Report not written</li>
+<li>Fix: Check output path permissions; ensure directory exists; re‑run with <code>--json</code>.</li>
+<li>E017: Playground upload limit</li>
+<li>Fix: Downsample or switch to local CLI; Docker image recommended for larger inputs.</li>
+<li>E018: Bad residuals or drift vs QR (small dense check)</li>
+<li>Fix: Reduce tol; ensure ridge≥0; compare to QR on small instance; report issue with <code>doctor --json</code> attached.</li>
+<li>E019: Windows wheel signature missing</li>
+<li>Fix: Use unsigned wheel temporarily (verify hash) or wait for signed build; see README signing page.</li>
+<li>E020: Spark pipeline interop</li>
+<li>Fix: Use Spark recipe to write CSR batches to disk and invoke <code>rcfd-pcg run</code>; keep partitions modest; collect <code>report.json</code>.</li>
+</ul></body></html>

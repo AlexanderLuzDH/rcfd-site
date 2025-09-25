@@ -1,0 +1,58 @@
+<!doctype html><html lang="en"><meta charset="utf-8"><title>LaunchSelfServe</title><style>body{font-family:system-ui,Segoe UI,Arial,sans-serif;margin:2rem;line-height:1.6;max-width:980px} pre,code{background:#f6f8fa;padding:.2rem .4rem;border-radius:4px}</style><body><h1 id="self-serve-launch-rcfd-pcg">Self-Serve Launch (RCFD-PCG)</h1>
+<h2 id="tldr">TL;DR</h2>
+<ul>
+<li>Install: <code>pip install rcfd-pcg</code></li>
+<li>Demo: <code>python -m rcfd_pcg.cli demo --out results/demo_report.json --html results/demo_report.html</code></li>
+<li>Run on your files: <code>rcfd-pcg run --A mm:matrix.mtx --b b.npy --json --out report.json --html report.html</code></li>
+<li>Recommend params: <code>rcfd-pcg --d 200 --sparse --density 0.05 --recommend --json</code></li>
+</ul>
+<h2 id="install-no-integration-required">Install (no integration required)</h2>
+<p><code>bash
+pip install rcfd-pcg</code></p>
+<h2 id="cli-usage-files-in-jsonhtml-out">CLI usage (files-in, JSON/HTML-out)</h2>
+<ul>
+<li>Matrix A:</li>
+<li>Matrix Market: <code>--A mm:path/to/matrix.mtx</code> (or <code>.mtx.gz</code>)</li>
+<li>CSR NPZ: <code>--A npz:path/to/csr.npz</code> (with <code>data/indices/indptr/shape</code>)</li>
+<li>Dense NumPy: <code>--A path/to/A.npy</code></li>
+<li>Vector b: <code>--b path/to/b.npy</code></li>
+</ul>
+<p>Examples:
+```powershell</p>
+<h1 id="one-off-demo-with-artifacts">One-off demo with artifacts</h1>
+<p>python -m rcfd_pcg.cli demo --out results/demo_report.json --html results/demo_report.html</p>
+<h1 id="run-on-your-files-matrix-market-numpy-vector">Run on your files (Matrix Market + NumPy vector)</h1>
+<p>rcfd-pcg run --A mm:path/to/matrix.mtx --b path/to/b.npy --json --out report.json --html report.html</p>
+<h1 id="automatic-parameter-recommendations-by-regime">Automatic parameter recommendations by regime</h1>
+<p>rcfd-pcg --d 200 --sparse --density 0.05 --recommend --json
+```</p>
+<h2 id="reuse-preconditioner-to-accelerate-repeated-solves">Reuse preconditioner to accelerate repeated solves</h2>
+<p>```powershell</p>
+<h1 id="build-and-save-once">Build and save once</h1>
+<p>rcfd-pcg --n 20000 --d 200 --sparse --eps 0.25 --tol 1e-6 --save-precond pre.npz --json</p>
+<h1 id="load-and-reuse">Load and reuse</h1>
+<p>rcfd-pcg --n 20000 --d 200 --sparse --eps 0.25 --tol 1e-6 --load-precond pre.npz --json
+```</p>
+<h2 id="docker-optional-zero-install-cpu">Docker (optional, zero-install CPU)</h2>
+<p>Requires Docker Desktop running.
+<code>powershell
+docker build -t rcfd-pcg:cpu -f Dockerfile .
+docker run --rm -v ${PWD}:/work -w /work rcfd-pcg:cpu ^
+  python -m rcfd_pcg.cli demo --out results/demo_report.json --html results/demo_report.html</code></p>
+<h2 id="colab-optional">Colab (optional)</h2>
+<p>Open <code>notebooks/colab_cli_demo.ipynb</code> to run the demo and <code>rcfd-pcg run</code> in the cloud.</p>
+<h2 id="publishing-maintainers">Publishing (maintainers)</h2>
+<p>1) Bump version in <code>pyproject.toml</code> and update <code>README.md</code> changelog.
+2) Build:
+<code>bash
+python -m pip install --upgrade build twine
+python -m build</code>
+3) Upload to PyPI:
+<code>bash
+twine upload dist/*</code></p>
+<h2 id="support">Support</h2>
+<ul>
+<li>Environment snapshot: <code>rcfd-pcg doctor --json</code></li>
+<li>Troubleshooting: <code>docs/Troubleshooting.md</code></li>
+<li>Windows consoles: prefer <code>--json</code> or <code>--ascii-default</code>. </li>
+</ul></body></html>

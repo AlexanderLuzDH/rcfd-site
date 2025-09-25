@@ -1,0 +1,31 @@
+<!doctype html><html lang="en"><meta charset="utf-8"><title>PlaygroundSpec</title><style>body{font-family:system-ui,Segoe UI,Arial,sans-serif;margin:2rem;line-height:1.6;max-width:980px} pre,code{background:#f6f8fa;padding:.2rem .4rem;border-radius:4px}</style><body><h1 id="hosted-playground-spec">Hosted Playground (Spec)</h1>
+<p>A minimal, usage‑capped service that renders <code>proof_pack.html</code> without support. See <code>examples/service.py</code> for a reference implementation.</p>
+<h2 id="api">API</h2>
+<ul>
+<li>GET <code>/health</code> → <code>{ status, python, numpy }</code></li>
+<li>GET <code>/metrics</code> → counters for requests/solves and last solve time</li>
+<li>POST <code>/solve</code> → JSON body</li>
+<li>Request: <code>{ A: number[][] | csr_npz | mm_path, b: number[], eps?: number, tol?: number, max_iter?: number, compression?: "auto"|"eigh"|"eigh_inc"|"rand", oversampling?: number, power_iters?: number, threads?: number, sketch_dtype?: "float32"|"float64", num_passes?: 1|2, precond_type?: "chol"|"blockdiag", num_col_blocks?: number, dense_chunk_size?: number, spill_dir?: string|null }</code></li>
+<li>Response: <code>{ x: number[], diagnostics: object }</code></li>
+</ul>
+<p>Notes:
+- The demo implementation accepts dense arrays for <code>A</code>/<code>b</code>. For production, prefer file uploads (CSR NPZ) + strict validation.</p>
+<h2 id="limits-enforced">Limits (enforced)</h2>
+<ul>
+<li>Request size: <code>RCFD_SERVICE_MAX_BODY</code> bytes (default 5_000_000)</li>
+<li>Timeout: <code>RCFD_SERVICE_SOLVE_TIMEOUT_S</code> seconds (default 15.0)</li>
+<li>Optional token: set <code>RCFD_SERVICE_REQUIRE_TOKEN=1</code> and <code>RCFD_SERVICE_TOKEN=...</code></li>
+</ul>
+<h2 id="error-codes">Error Codes</h2>
+<ul>
+<li>400 Invalid JSON or parameter error → <code>{ detail: "..." }</code></li>
+<li>401 Unauthorized (token required)</li>
+<li>413 Request too large (exceeds configured limit)</li>
+<li>504 Solve timed out (exceeds configured timeout)</li>
+</ul>
+<h2 id="security-operations">Security &amp; Operations</h2>
+<ul>
+<li>No telemetry. No persistent storage by default.</li>
+<li>Run behind a reverse proxy with TLS and per‑IP rate limits.</li>
+<li>Publish the JSON spec and error codes; don’t answer questions.</li>
+</ul></body></html>

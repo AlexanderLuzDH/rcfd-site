@@ -1,0 +1,169 @@
+<!doctype html><html lang="en"><meta charset="utf-8"><title>RegimeCookbook</title><style>body{font-family:system-ui,Segoe UI,Arial,sans-serif;margin:2rem;line-height:1.6;max-width:980px} pre,code{background:#f6f8fa;padding:.2rem .4rem;border-radius:4px}</style><body><h1 id="regime-cookbook">Regime Cookbook</h1>
+<p>Quick, opinionated recipes for choosing parameters and commands across common regimes.</p>
+<h2 id="table-recommended-defaults">Table: Recommended defaults</h2>
+<table>
+<thead>
+<tr>
+<th>Regime</th>
+<th>Data</th>
+<th style="text-align: right;">d</th>
+<th style="text-align: right;">epsilon</th>
+<th>Compression</th>
+<th style="text-align: right;">Oversampling</th>
+<th style="text-align: right;">Power iters</th>
+<th style="text-align: right;">Threads</th>
+<th>Notes</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Sparse tall-skinny</td>
+<td>CSR, density &lt;= 0.05</td>
+<td style="text-align: right;">128–512</td>
+<td style="text-align: right;">0.15</td>
+<td>rand</td>
+<td style="text-align: right;">12</td>
+<td style="text-align: right;">1</td>
+<td style="text-align: right;">2</td>
+<td>Good speed/accuracy. Use <code>--threads 2</code> by default.</td>
+</tr>
+<tr>
+<td>Sparse tall-skinny</td>
+<td>CSR, density &lt;= 0.05</td>
+<td style="text-align: right;">512–2048</td>
+<td style="text-align: right;">0.25</td>
+<td>rand</td>
+<td style="text-align: right;">8–12</td>
+<td style="text-align: right;">1</td>
+<td style="text-align: right;">1–2</td>
+<td>Prefer 8 for faster sketch if PCG iterations low.</td>
+</tr>
+<tr>
+<td>Dense moderate</td>
+<td>ndarray</td>
+<td style="text-align: right;">200–1000</td>
+<td style="text-align: right;">0.25</td>
+<td>rand</td>
+<td style="text-align: right;">8–12</td>
+<td style="text-align: right;">1</td>
+<td style="text-align: right;">1–2</td>
+<td>Try <code>--dense-chunk-size</code> for cache tuning; try <code>--threads-compare 1,2</code>.</td>
+</tr>
+<tr>
+<td>Wide (large d)</td>
+<td>CSR/ndarray</td>
+<td style="text-align: right;">1000–5000</td>
+<td style="text-align: right;">0.25–0.35</td>
+<td>rand</td>
+<td style="text-align: right;">12</td>
+<td style="text-align: right;">1</td>
+<td style="text-align: right;">1–2</td>
+<td>Consider <code>--precond-type blockdiag --num-col-blocks 2</code> (or 4).</td>
+</tr>
+<tr>
+<td>Well-conditioned</td>
+<td>any</td>
+<td style="text-align: right;">any</td>
+<td style="text-align: right;">auto</td>
+<td>auto</td>
+<td style="text-align: right;">auto</td>
+<td style="text-align: right;">auto</td>
+<td style="text-align: right;">auto</td>
+<td>Auto bail-out may skip preconditioner if it won't help.</td>
+</tr>
+<tr>
+<td>Adversarial spectra</td>
+<td>any</td>
+<td style="text-align: right;">&gt;=256</td>
+<td style="text-align: right;">0.15–0.25</td>
+<td>rand</td>
+<td style="text-align: right;">12</td>
+<td style="text-align: right;">1–2</td>
+<td style="text-align: right;">1–2</td>
+<td>Consider <code>--num-passes 2</code> (heuristics auto-disable if not helpful).</td>
+</tr>
+</tbody>
+</table>
+<h2 id="commands">Commands</h2>
+<p>Sparse (n≈20k, d≈200):</p>
+<p><code>bash
+rcfd-pcg --n 20000 --d 200 --sparse --eps 0.15 --threads 2 --tol 1e-6 --json</code></p>
+<p>Dense (n≈5k, d≈400):</p>
+<p><code>bash
+rcfd-pcg --n 5000 --d 400 --eps 0.25 --tol 1e-6 --threads 1 --json</code></p>
+<p>Wide (d≈1500) with block-diagonal preconditioner:</p>
+<p><code>bash
+rcfd-pcg --n 100000 --d 1500 --sparse --eps 0.25 --precond-type blockdiag --num-col-blocks 2 --json</code></p>
+<p>Auto bail-out (enabled by default). CLI output and JSON diagnostics flag when the guardrail skips sketching. Tighten or loosen it with:</p>
+<p><code>bash
+rcfd-pcg --n 20000 --d 300 --sparse --eps auto --bail-out-threshold 4.0 --json</code></p>
+<p>To force preconditioning regardless of the indicator:</p>
+<p><code>bash
+rcfd-pcg --n 20000 --d 300 --sparse --eps auto --no-bail-out --json</code></p>
+<h2 id="tips">Tips</h2>
+<ul>
+<li>Use <code>rcfd-pcg --recommend</code> for a quick starting point.</li>
+<li>If RAM spikes during sketching, add <code>--spill-dir</code> to use memmap.</li>
+<li>On multi-socket servers, <code>--precond-warmup-solves 2</code> can stabilize timings.</li>
+<li>For dense cases, tune <code>--dense-chunk-size</code> to match L2/L3 cache (e.g., 8k–64k rows per chunk depending on shape).</li>
+<li>Block-diagonal preconditioner: start with <code>--num-col-blocks 2</code> for d&gt;=1000; increase to 4 if factorization dominates.</li>
+</ul>
+<h2 id="block-diagonal-preconditioner-guidance">Block-diagonal preconditioner guidance</h2>
+<p>When d is large (wide-ish tall-skinny), forming and factoring a single d×d Gram can dominate. Splitting columns into K blocks reduces factor cost to K smaller factorizations at the expense of a weaker preconditioner.</p>
+<p>Recommended K by d (rule of thumb):</p>
+<table>
+<thead>
+<tr>
+<th style="text-align: right;">d range</th>
+<th><code>--precond-type</code></th>
+<th style="text-align: right;"><code>--num-col-blocks</code></th>
+<th>Trade‑off</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td style="text-align: right;">≤ 1000</td>
+<td><code>chol</code></td>
+<td style="text-align: right;">1</td>
+<td>Single factor is fastest and strongest.</td>
+</tr>
+<tr>
+<td style="text-align: right;">1000–2500</td>
+<td><code>blockdiag</code></td>
+<td style="text-align: right;">2</td>
+<td>Cuts factor time nearly in half; small iteration increase.</td>
+</tr>
+<tr>
+<td style="text-align: right;">2500–5000</td>
+<td><code>blockdiag</code></td>
+<td style="text-align: right;">4</td>
+<td>Keeps per-block factor small; iterations may rise modestly.</td>
+</tr>
+<tr>
+<td style="text-align: right;">&gt; 5000</td>
+<td><code>blockdiag</code></td>
+<td style="text-align: right;">4–8</td>
+<td>Use 4 first; raise to 8 if factor dominates or memory tight.</td>
+</tr>
+</tbody>
+</table>
+<p>Sample commands (sparse synthetic):</p>
+<p>```powershell</p>
+<h1 id="d1500">d≈1500</h1>
+<p>rcfd-pcg --n 100000 --d 1500 --sparse --eps 0.25 --precond-type blockdiag --num-col-blocks 2 --json</p>
+<h1 id="d4000">d≈4000</h1>
+<p>rcfd-pcg --n 200000 --d 4000 --sparse --eps 0.25 --precond-type blockdiag --num-col-blocks 4 --json
+```</p>
+<p>Mini-benchmark recipe (compare single Cholesky vs block‑diag):</p>
+<p>```powershell</p>
+<h1 id="windows-powershell-sparse-n200k-d1500-and-4000">Windows PowerShell – sparse n=200k, d=1500 and 4000</h1>
+<p>$env:RCFD_SKIP_TORCH_IMPORT='1'
+python -m rcfd_pcg.bench --n 200000 --d 1500 --sparse --eps 0.25 --tol 1e-6 --repeats 3 --precond-type chol --json --out-json results/bench_d1500_ptype_chol.json
+python -m rcfd_pcg.bench --n 200000 --d 1500 --sparse --eps 0.25 --tol 1e-6 --repeats 3 --precond-type blockdiag --num-col-blocks 2 --json --out-json results/bench_d1500_ptype_blockdiag_k2.json</p>
+<p>python -m rcfd_pcg.bench --n 200000 --d 4000 --sparse --eps 0.25 --tol 1e-6 --repeats 3 --precond-type chol --json --out-json results/bench_d4000_ptype_chol.json
+python -m rcfd_pcg.bench --n 200000 --d 4000 --sparse --eps 0.25 --tol 1e-6 --repeats 3 --precond-type blockdiag --num-col-blocks 4 --json --out-json results/bench_d4000_ptype_blockdiag_k4.json
+```</p>
+<p>Interpretation tips:
+- Expect block‑diag to reduce factorization time significantly as d grows.
+- Iterations may increase by 10–40% depending on spectra; end‑to‑end can still improve.
+- If iterations spike, lower epsilon (e.g., 0.15) or reduce K.</p></body></html>

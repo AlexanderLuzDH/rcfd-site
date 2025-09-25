@@ -1,0 +1,20 @@
+<!doctype html><html lang="en"><meta charset="utf-8"><title>ReleaseNotes-0.1.0</title><style>body{font-family:system-ui,Segoe UI,Arial,sans-serif;margin:2rem;line-height:1.6;max-width:980px} pre,code{background:#f6f8fa;padding:.2rem .4rem;border-radius:4px}</style><body><p>RCFD-PCG 0.1.0 — GA</p>
+<p>Highlights
+- One‑command proof‑pack pipeline: <code>scripts/proof_pack_pipeline.py</code> runs demo, canonical sparse single/reuse, real datasets (20NG/RCV1/CA housing), and generates <code>results/proof_pack.{json,html}</code>.
+- Guardrails: solver emits <code>bail_out</code> and <code>bail_out_details</code>; CLI exposes <code>--bail-out-threshold</code>. sklearn wrapper adds <code>auto_bail_out</code> and <code>bail_out_threshold</code> params.
+- Proof‑pack artifacts and plots refreshed; <code>results/index.html</code> regenerated.</p>
+<p>Packaging
+- Published to PyPI: <code>pip install rcfd-pcg==0.1.0</code>.
+- GHCR images: <code>ghcr.io/alexanderluzdh/rcfd:v0.1.0</code> and <code>:latest</code>.</p>
+<p>Quick Verify
+<code>python -m venv v
+v\Scripts\python -m pip install --upgrade pip
+v\Scripts\python -m pip install rcfd-pcg==0.1.0
+v\Scripts\python -m rcfd_pcg.cli doctor --json</code></p>
+<p>Docker
+<code>docker pull ghcr.io/alexanderluzdh/rcfd:latest
+docker run --rm -v ${PWD}:/work -w /work ghcr.io/alexanderluzdh/rcfd:latest \
+  python -m rcfd_pcg.cli demo --out results/demo_report.json --html results/demo_report.html</code></p>
+<p>Notes
+- The bail‑out guardrail is enabled by default and will report when the sketch is skipped (with the indicator and threshold used).
+- For best results on Windows consoles, prefer <code>--json</code> or set UTF‑8 output; see <code>docs/BenchmarkGuide.md</code> for environment tips.</p></body></html>

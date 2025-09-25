@@ -1,0 +1,70 @@
+<!doctype html><html lang="en"><meta charset="utf-8"><title>ProofPack</title><style>body{font-family:system-ui,Segoe UI,Arial,sans-serif;margin:2rem;line-height:1.6;max-width:980px} pre,code{background:#f6f8fa;padding:.2rem .4rem;border-radius:4px}</style><body><h1 id="proof-pack-runbook">Proof Pack Runbook</h1>
+<p>A single runbook for producing the evidence bundle we hand to prospects or internal reviewers.</p>
+<h2 id="0-automation-shortcut">0. Automation shortcut</h2>
+<ul>
+<li>Prefer one command? <code>python scripts/proof_pack_pipeline.py</code> executes the steps below (with flags to skip demo/sparse/real).</li>
+</ul>
+<h2 id="1-preflight">1. Pre‑flight</h2>
+<ul>
+<li>Create/activate the RCFD environment (<code>pip install -e .[dev]</code> if you need dev extras).</li>
+<li>Optional: clean previous artifacts — keep <code>results/</code> but remove older proof packs if you want a fresh copy (<code>results/proof_pack.*</code>).</li>
+<li>Pin BLAS threads for reproducibility if you expect noisy hosts (set <code>OPENBLAS_NUM_THREADS=1</code>, etc.).</li>
+</ul>
+<h2 id="2-canonical-commands-6-minutes-on-a-laptop">2. Canonical commands (~6 minutes on a laptop)</h2>
+<ol>
+<li>Demo + HTML report (synthetic sparse demo):
+   <code>powershell
+   python -m rcfd_pcg.cli demo --out results/demo_report.json --html results/demo_report.html</code></li>
+<li>Canonical sparse benchmark (single + reuse):
+   <code>powershell
+   python -m rcfd_pcg.bench --n 20000 --d 200 --sparse --eps 0.25 --tol 1e-6 --repeats 3 --json --out-json results/bench_sparse_single.json
+   python -m rcfd_pcg.bench --n 20000 --d 200 --sparse --eps 0.25 --tol 1e-6 --repeats 3 --reuse-precond --json --out-json results/bench_sparse_reuse.json</code></li>
+<li>Real datasets (JSON written via <code>--json-out</code>):
+   <code>powershell
+   rcfd-pcg --real-dataset 20ng --n-features 1024 --eps 0.25 --tol 1e-6 --json --json-out results/bench_20ng.json
+   rcfd-pcg --real-dataset rcv1 --n-features 1024 --eps 0.25 --tol 1e-6 --json --json-out results/bench_rcv1.json
+   rcfd-pcg --real-dataset cahousing --eps 0.25 --tol 1e-6 --json --json-out results/bench_cahousing.json</code><blockquote>
+<p>If the host cannot reach OpenML, RCV1/20NG will fail; run the commands on a networked machine or reuse existing JSONs.</p>
+</blockquote>
+</li>
+</ol>
+<h2 id="3-aggregate-proofpack-2-seconds">3. Aggregate proof‑pack (~2 seconds)</h2>
+<p>```powershell
+python -m examples.proof_pack --results results --out-json results/proof_pack.json --out-html results/proof_pack.html</p>
+<h1 id="pro-add-recommendations-appendix">(Pro) add recommendations appendix</h1>
+<p>python -m examples.proof_pack --results results --out-json results/proof_pack.json --out-html results/proof_pack.html --pro-report
+<code>``
+Outputs:
+-</code>results/proof_pack.json<code>: machine-readable bundle (useful for tests/dashboards).
+-</code>results/proof_pack.html`: shareable HTML summarising demo, sparse, reuse, and real datasets.</p>
+<h2 id="4-what-to-send">4. What to send</h2>
+<ul>
+<li>Zip <code>results/</code> and <code>plots/</code> (optional) or cherry-pick:</li>
+<li><code>results/proof_pack.html</code> (primary artifact).</li>
+<li><code>results/demo_report.html</code>, <code>results/single_vs_reuse.html</code> for richer storytelling.</li>
+<li>Plots (<code>plots/single_vs_reuse_time.png</code>, etc.) if the stakeholder prefers images.</li>
+<li>Include <code>results/proof_pack.json</code> for anyone wanting to ingest metrics programmatically.</li>
+<li>(Pro) Include <code>results/proof_pack.json.sig.json</code> if signing is enabled via <code>scripts/proof_pack_pipeline.py --sign-artifacts</code>.</li>
+</ul>
+<h2 id="5-interpreting-the-proofpack">5. Interpreting the proof‑pack</h2>
+<ul>
+<li>Benchmarks table shows RCFD mean time/iterations vs LSQR; <code>bail_out</code>/<code>bail_out_rate</code> expose guardrail behaviour.</li>
+<li>Real datasets table highlights whether the guardrail skipped sketching and the underlying indicator vs threshold.</li>
+<li>Use the bail‑out details to reassure buyers when RCFD deliberately fell back to the baseline.</li>
+</ul>
+<h2 id="6-troubleshooting">6. Troubleshooting</h2>
+<ul>
+<li>Missing files are flagged inline (“missing” or “error: ...”). Re-run the relevant command.</li>
+<li>Unicode/UTF‑16 issues arise if shell redirection is used; always rely on CLI <code>--json-out</code> to avoid BOM-encoded files.</li>
+<li>For air‑gapped runs, cache the datasets locally or pre‑generate JSON on a connected machine.</li>
+</ul>
+<h2 id="7-ci-automation-notes">7. CI / automation notes</h2>
+<ul>
+<li>The script tolerates UTF‑8, UTF‑8 with BOM, and UTF‑16 JSON; ideal for Windows shells.</li>
+<li>You can call the module from CI to publish the HTML as an artifact: <code>python -m examples.proof_pack --results results --out-json dist/proof_pack.json --out-html dist/proof_pack.html</code>.</li>
+</ul>
+<h2 id="8-todo-optional-evolutions">8. TODO (optional evolutions)</h2>
+<ul>
+<li>Add automated screenshots (selenium/headless) if we want visual bundles.</li>
+<li>Extend to include GPU envelope in the future once that path is GA.</li>
+</ul></body></html>

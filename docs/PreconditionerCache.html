@@ -1,0 +1,37 @@
+<!doctype html><html lang="en"><meta charset="utf-8"><title>PreconditionerCache</title><style>body{font-family:system-ui,Segoe UI,Arial,sans-serif;margin:2rem;line-height:1.6;max-width:980px} pre,code{background:#f6f8fa;padding:.2rem .4rem;border-radius:4px}</style><body><h1 id="preconditioner-cache-versioning-checksums-and-reuse-guidance">Preconditioner Cache: Versioning, Checksums, and Reuse Guidance</h1>
+<p>RCFD supports saving/loading preconditioners for reuse across runs, which can significantly reduce end-to-end time when solving multiple right-hand sides or repeated benchmarks.</p>
+<h2 id="what-gets-saved">What gets saved</h2>
+<ul>
+<li>Cholesky factor <code>(c, lower)</code> suitable for <code>scipy.linalg.cho_solve</code></li>
+<li>Metadata including: <code>ridge_lambda</code>, <code>epsilon</code>, <code>sketch_rows</code>, <code>dimension</code>, dtype</li>
+<li>Integrity fields: <code>precond_version</code> (schema) and <code>checksum</code> (SHA-256 of <code>c</code>)</li>
+</ul>
+<h2 id="reuse-scenarios">Reuse scenarios</h2>
+<ul>
+<li>Same machine, same <code>A</code>: Safe to reuse across runs and processes</li>
+<li>Same <code>A</code> across machines: Checksum verifies integrity, but be mindful of BLAS differences and endianness</li>
+<li>Slightly changed <code>A</code> (e.g., added rows): consider rebuilding; reuse only if changes are minor and validated by accuracy checks</li>
+</ul>
+<h2 id="best-practices">Best practices</h2>
+<ul>
+<li>Versioning: Keep <code>precond_version</code> stable; bump when schema changes</li>
+<li>Integrity: Always verify <code>checksum_ok</code> on load; <code>load_preconditioner</code> returns flags</li>
+<li>Parameters: Record <code>epsilon</code>, <code>ridge_lambda</code>, and dimension in your experiment logs</li>
+<li>Warm-up: Optionally run <code>--precond-warmup-solves 2</code> to stabilize timings on NUMA systems</li>
+<li>Storage: Store NPZ alongside environment snapshot (CPU, Python/NumPy/SciPy versions) for reproducibility</li>
+</ul>
+<h2 id="cli-examples">CLI examples</h2>
+<p>```powershell</p>
+<h1 id="build-and-save">Build and save</h1>
+<p>rcfd-pcg --n 20000 --d 200 --sparse --eps 0.25 --save-precond pre.npz --json</p>
+<h1 id="inspect-and-verify-checksum">Inspect and verify checksum</h1>
+<p>rcfd-pcg --check-precond pre.npz --json</p>
+<h1 id="load-and-reuse">Load and reuse</h1>
+<p>rcfd-pcg --n 20000 --d 200 --sparse --eps 0.25 --load-precond pre.npz --json
+```</p>
+<h2 id="cross-machine-reuse">Cross-machine reuse</h2>
+<ul>
+<li>Ensure compatible NumPy/SciPy versions</li>
+<li>Prefer the same architecture (x86_64 vs ARM64); validate by running a small solve and comparing residual norms</li>
+<li>If in doubt, rebuild preconditioner on the target machine</li>
+</ul></body></html>

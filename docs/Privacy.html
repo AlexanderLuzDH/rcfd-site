@@ -1,0 +1,17 @@
+<!doctype html><html lang="en"><meta charset="utf-8"><title>Privacy</title><style>body{font-family:system-ui,Segoe UI,Arial,sans-serif;margin:2rem;line-height:1.6;max-width:980px} pre,code{background:#f6f8fa;padding:.2rem .4rem;border-radius:4px}</style><body><h1 id="privacy">Privacy</h1>
+<ul>
+<li>No telemetry by default. CLI and APIs run locally and write artifacts to your filesystem only.</li>
+<li>Optional, opt-in telemetry is available for private deployments. It is disabled unless you set BOTH:</li>
+<li><code>RCFD_TELEMETRY_ENABLE=1</code></li>
+<li><code>RCFD_TELEMETRY_URL=https://your.endpoint/collect</code></li>
+<li>Optional: <code>RCFD_TELEMETRY_TOKEN=...</code> (sent as <code>Authorization: Bearer ...</code>)</li>
+<li>What is sent (opt-in only):</li>
+<li>Event name, timestamp, runtime environment summary (Python version, OS name/arch), session UUID</li>
+<li>High-level run properties (e.g., <code>n</code>, <code>d</code>, <code>sparse</code>, epsilon, aggregate timings, bail-out flag)</li>
+<li>No file contents, paths, dataset names, or PII are collected by default</li>
+<li>Fail-safe: network errors are ignored; telemetry never blocks or crashes the CLI.</li>
+<li>Hosted playground (when enabled) publishes an explicit API spec, size/time limits, and error codes; no other data is collected.</li>
+<li>Offline options:</li>
+<li>CPU Docker image for air-gapped environments</li>
+<li>Reproducibility packs include only environment metadata and artifacts you generate</li>
+</ul></body></html>

@@ -1,0 +1,24 @@
+<!doctype html><html lang="en"><meta charset="utf-8"><title>ThreadsAndBLAS</title><style>body{font-family:system-ui,Segoe UI,Arial,sans-serif;margin:2rem;line-height:1.6;max-width:980px} pre,code{background:#f6f8fa;padding:.2rem .4rem;border-radius:4px}</style><body><h1 id="threading-and-blas-guide">Threading and BLAS Guide</h1>
+<p>RCFD uses Python thread pools for randomized compression and dense normal-equations matvec. To avoid BLAS oversubscription, it limits BLAS threads to 1 inside those Python-parallel regions.</p>
+<h2 id="recommended-settings">Recommended settings</h2>
+<ul>
+<li>Set global BLAS threads to 1 for reproducible benchmarks:</li>
+<li>POSIX: <code>export OPENBLAS_NUM_THREADS=1 MKL_NUM_THREADS=1 OMP_NUM_THREADS=1 NUMEXPR_NUM_THREADS=1</code></li>
+<li>Windows PowerShell: <code>$env:OPENBLAS_NUM_THREADS='1'; $env:MKL_NUM_THREADS='1'; $env:OMP_NUM_THREADS='1'; $env:NUMEXPR_NUM_THREADS='1'</code></li>
+<li>Use <code>--threads</code>=2 for randomized compression on sparse moderate-d regimes; otherwise 1 is fine.</li>
+<li>For dense A, try <code>--threads-compare 1,2</code> and tune <code>--dense-chunk-size</code>.</li>
+</ul>
+<h2 id="contention-safe-preset">Contention-safe preset</h2>
+<p>On shared servers, use conservative settings:
+- <code>--threads 1</code>
+- Global BLAS threads = 1 (as above)
+- Avoid running multiple benchmark jobs on the same machine concurrently
+ - Prefer JSON mode and run ≥1 warmup; pin specific CPU cores if possible</p>
+<h2 id="numa-and-warm-up">NUMA and warm-up</h2>
+<ul>
+<li>Use <code>--precond-warmup-solves 1..2</code> to prime caches/NUMA before timing PCG.</li>
+</ul>
+<h2 id="diagnostics">Diagnostics</h2>
+<ul>
+<li>Use <code>--json</code> outputs to track <code>num_spmv_Ax</code>/<code>ATx</code> and timings.</li>
+</ul></body></html>

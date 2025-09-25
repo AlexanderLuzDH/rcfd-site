@@ -1,0 +1,43 @@
+<!doctype html><html lang="en"><meta charset="utf-8"><title>Datasets</title><style>body{font-family:system-ui,Segoe UI,Arial,sans-serif;margin:2rem;line-height:1.6;max-width:980px} pre,code{background:#f6f8fa;padding:.2rem .4rem;border-radius:4px}</style><body><h1 id="dataset-gallery-and-benchmarking-guidance">Dataset Gallery and Benchmarking Guidance</h1>
+<p>This page lists suggested datasets and how to add your own for canonical benchmarks.</p>
+<h2 id="suggested-datasets">Suggested datasets</h2>
+<ul>
+<li>Sparse tall-skinny synthetic (provided): use <code>--sparse --density 0.01–0.05</code>, <code>d≈200–512</code></li>
+<li>Ill-conditioned synthetic: use <code>SyntheticProblem(spectrum_decay='power', power_exponent=1.5)</code></li>
+<li>Dense moderate <code>d</code> (e.g., d=400–1000): stress test dense path and <code>--threads-compare</code></li>
+<li>Real, free datasets (loaders under <code>examples/datasets_real.py</code>):</li>
+<li>20 Newsgroups (text, sparse CSR, hashed features to target d): <code>load_20newsgroups_hashed(n_features=1024)</code></li>
+<li>RCV1 (Reuters, large sparse tf-idf, hashed/projection to target d): <code>load_rcv1_hashed(n_features=1024)</code></li>
+<li>YearPredictionMSD (dense, n≈515k, d=90): <code>load_yearprediction_msd(sample=100000)</code></li>
+<li>California Housing (dense, n≈20k, d=8): <code>load_california_housing()</code></li>
+</ul>
+<h3 id="running-real-benchmarks">Running real benchmarks</h3>
+<p><code>bash
+python -m examples.benchmark_real --dataset 20ng --n_features 1024 --eps 0.25 --repeats 2 --json --out-json results/bench_20ng.json
+python -m examples.benchmark_real --dataset rcv1 --n_features 1024 --eps 0.25 --repeats 1 --json --out-json results/bench_rcv1.json
+python -m examples.benchmark_real --dataset yearmsd --sample 100000 --eps 0.25 --repeats 2 --dense-baselines on --json --out-json results/bench_yearmsd.json
+python -m examples.benchmark_real --dataset cahousing --eps 0.25 --repeats 3 --dense-baselines on --json --out-json results/bench_cahousing.json</code></p>
+<h2 id="adding-a-new-dataset">Adding a new dataset</h2>
+<ol>
+<li>Write a small loader under <code>examples/</code> that returns <code>(A, b[, x_true])</code>.</li>
+<li>For sparse, prefer CSR/CSC to keep memory efficient.</li>
+<li>Record environment with <code>rcfd-suite</code> (auto-saves <code>environment.json</code>).</li>
+<li>Run <code>examples/benchmark_canonical.py</code> with your shapes/density and save JSON.</li>
+<li>For text datasets, consider feature hashing to a target <code>d</code> (e.g., 256–2048) for reproducible tall-skinny shapes.</li>
+</ol>
+<h2 id="what-to-report">What to report</h2>
+<ul>
+<li>Time mean ± std, iterations, SpMV counts (Ax/ATx)</li>
+<li>Sketch parameters (ε, compression, oversampling, power, threads)</li>
+<li>Preconditioner reuse impact (first vs reused solve)</li>
+<li>CPU pinning and BLAS thread settings</li>
+<li>Dataset source, license (sklearn datasets are generally BSD-3-Clause), and preprocessing steps (hashing/projection)</li>
+</ul>
+<h2 id="tips">Tips</h2>
+<ul>
+<li>Use <code>rcfd-pcg --recommend</code> for starting parameters.</li>
+<li>For Windows consoles, pass <code>--json</code> or <code>--ascii-default</code> to avoid Unicode issues.</li>
+<li>Pin BLAS threads and optionally set process affinity for stable timings.</li>
+</ul>
+<h3 id="preconditioner-cache">Preconditioner cache</h3>
+<p>See <code>docs/PreconditionerCache.md</code> for guidance on saving/loading preconditioners and cross-machine reuse.</p></body></html>

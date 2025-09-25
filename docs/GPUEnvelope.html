@@ -1,0 +1,38 @@
+<!doctype html><html lang="en"><meta charset="utf-8"><title>GPUEnvelope</title><style>body{font-family:system-ui,Segoe UI,Arial,sans-serif;margin:2rem;line-height:1.6;max-width:980px} pre,code{background:#f6f8fa;padding:.2rem .4rem;border-radius:4px}</style><body><h1 id="cpu-vs-gpu-when-does-gpu-help">CPU vs GPU: When does GPU help?</h1>
+<p>This page summarizes when the experimental GPU path is likely to help and how to measure it on your machine.</p>
+<h2 id="key-points">Key points</h2>
+<ul>
+<li>GPU support is experimental; CPU remains the default.</li>
+<li>GPU helps when d is moderate/large and the sketch build dominates runtime, and when data is already on GPU or host↔device copies are small relative to compute.</li>
+<li>For small problems or frequent host↔device transfers, CPU is usually faster.</li>
+</ul>
+<h2 id="what-we-provide">What we provide</h2>
+<ul>
+<li>GPU randomized sketch <code>build_rcfd_sketch_gpu_rand(A, lam, eps, oversampling=8, power_iters=0)</code> (CuPy).</li>
+<li>Prototype GPU CG <code>rcfd_pcg_solve_gpu(A, b, lam, eps, tol, max_iter, preconditioner_mode)</code>.</li>
+</ul>
+<h2 id="rules-of-thumb">Rules of thumb</h2>
+<ul>
+<li>Consider GPU when:</li>
+<li>d ≥ 1024 and n is large enough that sketch cost dominates.</li>
+<li>A is already on GPU (e.g., cuDF/CuPy/PyTorch tensors) or you can batch/stream without large copies.</li>
+<li>Prefer CPU when:</li>
+<li>d &lt; 512 or n is small.</li>
+<li>You cannot avoid large host↔device copies each run.</li>
+</ul>
+<h2 id="quick-benchmark-requires-cupy">Quick benchmark (requires CuPy)</h2>
+<p>```powershell</p>
+<h1 id="sketch-only-scale-test-adjust-shapes">Sketch-only scale test (adjust shapes)</h1>
+<p>python -m examples.benchmark_gpu_envelope --n_list 20000,100000 --d_list 512,1024 --eps 0.25
+```</p>
+<h2 id="interpreting-results">Interpreting results</h2>
+<ul>
+<li>Compare CPU vs GPU sketch times and end‑to‑end times. If GPU is ≥1.3× faster on sketch and copies aren’t dominant, the overall solve may benefit.</li>
+<li>If GPU is slower or marginal, stick to CPU.</li>
+</ul>
+<h2 id="caveats">Caveats</h2>
+<ul>
+<li>Prototype quality: numerical parity is good, but performance is not tuned and may vary by GPU/driver.</li>
+<li>Memory: ensure GPU RAM can hold A and intermediate buffers.</li>
+<li>Preconditioning on GPU is currently limited (no Cholesky preconditioner).</li>
+</ul></body></html>

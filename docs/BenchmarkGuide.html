@@ -1,0 +1,157 @@
+<!doctype html><html lang="en"><meta charset="utf-8"><title>BenchmarkGuide</title><style>body{font-family:system-ui,Segoe UI,Arial,sans-serif;margin:2rem;line-height:1.6;max-width:980px} pre,code{background:#f6f8fa;padding:.2rem .4rem;border-radius:4px}</style><body><h1 id="benchmark-guide">Benchmark Guide</h1>
+<p>This guide shows how to run fair, reproducible benchmarks for RCFD-PCG vs LSQR/LSMR/CGNE.</p>
+<h2 id="environment">Environment</h2>
+<ul>
+<li>Pin CPU threads (e.g., set <code>OPENBLAS_NUM_THREADS=1</code>, <code>MKL_NUM_THREADS=1</code> as applicable). The library will also best-effort limit BLAS threads to 1 while its own Python thread pools are active to avoid oversubscription.</li>
+<li>Record: CPU model, RAM, Python, NumPy, SciPy versions</li>
+<li>Warm-up runs before timing</li>
+</ul>
+<h3 id="windows-console-note">Windows console note</h3>
+<ul>
+<li>Windows default console encoding (cp1252) may not render Unicode symbols (±, ≈) used in human-readable output.</li>
+<li>Solutions:</li>
+<li>Prefer <code>--json</code> flags on CLIs for robust output, or pass <code>--ascii</code> / <code>--ascii-default</code> to avoid Unicode.</li>
+<li>Or set <code>PYTHONIOENCODING=utf-8</code> before running commands, and use a UTF-8 capable terminal.</li>
+<li>On PowerShell, you can do:<ul>
+<li><code>$env:PYTHONIOENCODING='utf-8'; [Console]::OutputEncoding = [System.Text.UTF8Encoding]::new(); chcp 65001 | Out-Null</code></li>
+</ul>
+</li>
+</ul>
+<h2 id="commands">Commands</h2>
+<p>Quick benchmark on synthetic sparse data (n=20k, d=200):</p>
+<p><code>bash
+rcfd-bench --n 20000 --d 200 --sparse --eps 0.25 --tol 1e-6 --repeats 3</code></p>
+<p>With preconditioner reuse:</p>
+<p><code>bash
+rcfd-bench --n 20000 --d 200 --sparse --eps 0.25 --tol 1e-6 --repeats 3 --reuse-precond</code></p>
+<p>Ablations (sweep epsilon, oversampling, power iters) and save CSV:</p>
+<p><code>bash
+rcfd-ablate --n 20000 --d 200 --sparse --repeats 1 --out-csv ablation.csv</code></p>
+<p>Add dtypes, passes, and threads grids (CSV + JSON logs):</p>
+<p><code>bash
+rcfd-ablate --n 20000 --d 200 --sparse --repeats 1 \
+  --out-csv ablation.csv --json --log-json ablate_out.json \
+  --sketch_dtype_grid float32,float64 --num_passes_grid 1,2 --threads_grid 1,2</code></p>
+<p>Suite sweeps (timestamped folder with per-config JSON + environment snapshot):</p>
+<p><code>bash
+python -m rcfd_pcg.suite --n 20000 --d 200 --sparse \
+  --eps_list 0.15,0.25 --sketch_dtypes float32 \
+  --num_passes_list 1,2 --threads_list 1,2 --repeats 2 \
+  --precond_type_list chol,blockdiag --num_col_blocks_list 1,2 \
+  --export results/rcfd_repro_pack.zip</code></p>
+<h2 id="proof-pack-summary">Proof-pack summary</h2>
+<ul>
+<li>After running the canonical commands, generate an aggregated snapshot with <code>python -m examples.proof_pack --results results --out-json results/proof_pack.json --out-html results/proof_pack.html</code>.</li>
+<li>The HTML (<code>results/proof_pack.html</code>) is the shareable artifact for reviewers; the JSON feeds dashboards/tests.</li>
+<li>A longer-form runbook lives in <code>docs/ProofPack.md</code>.</li>
+<li>Want one command? Run <code>python scripts/proof_pack_pipeline.py</code> to execute benchmarks and aggregation for you.</li>
+</ul>
+<h3 id="canonical-scenarios">Canonical scenarios</h3>
+<p>Recsys-like tall-skinny (n≈500k, d≈200):</p>
+<p><code>bash
+python -m examples.benchmark_canonical --scenario recsys_like \
+  --n 500000 --d 200 --repeats 3 --eps 0.25 --threads-compare 1,2 --json \
+  --out-json results/bench_recsys_like.json</code></p>
+<p>Ill-conditioned dense (n≈20k, d≈200):</p>
+<p><code>bash
+python -m examples.benchmark_canonical --scenario ill_conditioned \
+  --n 20000 --d 200 --repeats 3 --eps 0.25 --threads-compare 1,2 --json \
+  --out-json results/bench_ill_cond.json</code></p>
+<h3 id="json-mode-examples-windows-friendly">JSON mode examples (Windows-friendly)</h3>
+<p><code>powershell
+$env:PYTHONIOENCODING='utf-8'; [Console]::OutputEncoding = [System.Text.UTF8Encoding]::new(); chcp 65001 | Out-Null
+$env:OPENBLAS_NUM_THREADS='1'; $env:MKL_NUM_THREADS='1'; $env:OMP_NUM_THREADS='1'; $env:NUMEXPR_NUM_THREADS='1'
+rcfd-bench --n 20000 --d 200 --sparse --eps 0.25 --tol 1e-6 --repeats 3 --json
+rcfd-bench --n 20000 --d 200 --sparse --eps 0.25 --tol 1e-6 --repeats 3 --reuse-precond --json
+rcfd-ablate --n 20000 --d 200 --sparse --repeats 1 --out-csv ablation.csv --json</code></p>
+<h3 id="new-flags">New flags</h3>
+<ul>
+<li><code>rcfd-pcg --sketch-dtype {float32,float64}</code>: control sketch precision (preconditioner remains float64 internally).</li>
+<li><code>rcfd-pcg --log-json path.json</code>: save solver diagnostics to file.</li>
+<li><code>rcfd-bench --out-json path.json</code>: save benchmark results to file (when <code>--json</code> is used).</li>
+<li><code>rcfd-ablate --log-json path.json</code>: save ablation results to file (when <code>--json</code> is used).</li>
+<li><code>rcfd-ablate --sketch_dtype_grid float32,float64</code>: ablate over sketch dtype as well.</li>
+<li><code>rcfd-ablate --num_passes_grid 1,2 --threads_grid 1,2</code>: vary passes and randomized compression threads.</li>
+<li><code>rcfd-bench --num-passes N --threads T</code>: benchmark passes and parallel randomized compression blocks.</li>
+<li><code>rcfd-pcg --recommend --json</code>: print recommended params for given d/sparsity.</li>
+<li><code>rcfd-pcg --check-precond path.npz --json</code>: inspect and verify a preconditioner (checksum included).</li>
+<li><code>rcfd-pcg --ascii</code> / <code>--ascii-default</code>: force ASCII icons in human-readable output, helpful on non-UTF-8 Windows consoles.</li>
+<li><code>rcfd-pcg --spill-dir PATH</code>: spill the sketch buffer to disk (memmap) to reduce peak RAM usage.</li>
+<li><code>rcfd-pcg --precond-warmup-solves K</code>: perform K dummy solves with the Cholesky preconditioner to warm caches/NUMA prior to PCG.</li>
+<li><code>rcfd-pcg --precond-type {chol,blockdiag}</code>: choose a single Cholesky preconditioner or a block-diagonal preconditioner by partitioning columns.</li>
+<li><code>rcfd-pcg --num-col-blocks K</code>: number of column blocks for the block-diagonal preconditioner (use K≥2 for very wide matrices where a single factor is costly).</li>
+<li><code>rcfd-pcg --dense-chunk-size N</code>: override dense normal-equations matvec row chunk size (CPU cache tuning; default auto).</li>
+<li><code>rcfd-pcg --bail-out-threshold X</code>: adjust the auto bail-out guardrail; lower values make it less eager to skip sketching.</li>
+<li>GPU: experimental CuPy path includes <code>build_rcfd_sketch_gpu_rand</code> for randomized GPU sketch; see <code>docs/SupportMatrix.md</code>.</li>
+</ul>
+<h3 id="bail-out-diagnostics">Bail-out diagnostics</h3>
+<ul>
+<li>Solver JSON includes <code>bail_out</code> and <code>bail_out_details</code> (indicator, threshold, dimension) so you can tell when the guardrail skipped sketching.</li>
+<li><code>rcfd-bench</code> adds <code>bail_out</code> and <code>bail_out_rate</code> to the <code>rcfd</code> block; watch it when you share proof-packs so stakeholders see the guardrail in action.</li>
+</ul>
+<h3 id="heuristics-and-recommendations">Heuristics and recommendations</h3>
+<ul>
+<li><code>--eps auto</code>: 0.15 when d &lt; 256; 0.25 for 256 ≤ d &lt; 2048; 0.35 otherwise.</li>
+<li>Sparse matrices with 128 ≤ d ≤ 512: solver CLI auto-sets <code>--threads 2</code> unless overridden.</li>
+<li>For small-d sparse (d &lt; 256, density ≤ 0.05), randomized compression with oversampling≈8 and power≈1 often wins.</li>
+<li>For dense matrices with strong per-column variance spread, auto mode may bump <code>power_iters</code> to 1 and <code>oversampling</code> to 12 around moderate d.</li>
+<li>Auto mode may also run a small probe to estimate spectral spread and tune parameters accordingly.</li>
+<li>For very wide matrices (large <code>d</code>), try a block-diagonal preconditioner via <code>--precond-type blockdiag --num-col-blocks K</code> (e.g., K=2 or 4) to reduce factorization cost.</li>
+<li>On dense data, if you observe suboptimal CPU utilization, experiment with <code>--dense-chunk-size</code> to better match L2/L3 cache behavior.</li>
+</ul>
+<h3 id="cpu-pinning-and-blas-threads-optional">CPU pinning and BLAS threads (optional)</h3>
+<p>Pin BLAS and optionally set process affinity to reduce jitter:</p>
+<p>```bash</p>
+<h1 id="posix">POSIX</h1>
+<p>export OPENBLAS_NUM_THREADS=1 MKL_NUM_THREADS=1 OMP_NUM_THREADS=1 NUMEXPR_NUM_THREADS=1
+python -c "from rcfd_pcg.util import set_cpu_affinity_prefer_cores as pin; pin([0,1])"</p>
+<h1 id="windows-powershell">Windows PowerShell</h1>
+<p>$env:OPENBLAS_NUM_THREADS='1'; $env:MKL_NUM_THREADS='1'; $env:OMP_NUM_THREADS='1'; $env:NUMEXPR_NUM_THREADS='1'
+python -c "from rcfd_pcg.util import set_cpu_affinity_prefer_cores as pin; pin([0,1])"</p>
+<p>Note: When using <code>--threads &gt; 1</code> for randomized compression or dense normal-equations matvec, RCFD temporarily limits BLAS threadpools to 1 during those Python-parallel regions (via threadpoolctl) to avoid oversubscription. You can still globally set BLAS env vars for the rest of your workflow.</p>
+<h3 id="dense-baselines">Dense baselines</h3>
+<p>When <code>--sparse</code> is not set (dense synthetic), the benchmark output will include direct dense baselines:</p>
+<ul>
+<li>Dense-QR: solves via <code>scipy.linalg.lstsq</code> (with augmentation for ridge if λ&gt;0).</li>
+<li>Dense-Cholesky: solves normal equations with Cholesky on <code>A^T A + λI</code>.</li>
+</ul>
+<p>These provide upper bounds for accuracy/speed on moderate d and help validate RCFD-PCG performance in dense regimes. Use <code>--threads-compare</code> to see when multi-threaded dense matvec helps.</p>
+<h3 id="preconditioner-reuse-example">Preconditioner reuse example</h3>
+<p>Building and reusing the preconditioner can reduce end-to-end solve time when solving multiple right-hand sides or repeats:</p>
+<p><code>powershell
+rcfd-bench --n 20000 --d 200 --sparse --eps 0.25 --tol 1e-6 --repeats 3 --reuse-precond --json</code></p>
+<p>Or via the solver CLI:</p>
+<p><code>powershell
+rcfd-pcg --n 20000 --d 200 --sparse --eps 0.25 --save-precond pre.npz --json
+rcfd-pcg --n 20000 --d 200 --sparse --eps 0.25 --load-precond pre.npz --json</code></p>
+<h3 id="plotting-benchmark-results">Plotting benchmark results</h3>
+<p>Use the helper script to plot iterations/time vs epsilon from a suite run:</p>
+<p><code>bash
+python -m examples.plot_benchmarks --input results/bench_20250810_131201 --out plots</code>
+Single-shot vs reuse comparison (requires matplotlib + numpy):</p>
+<p><code>bash
+pip install matplotlib numpy
+python -m examples.plot_single_vs_reuse --single results/bench_sparse_single.json --reuse results/bench_sparse_reuse.json --out plots</code></p>
+<h3 id="automation-tracks-index">Automation (tracks + index)</h3>
+<p>Run two canonical tracks and emit plots/HTML in one go:</p>
+<p><code>bash
+python -m examples.benchmark_tracks</code></p>
+<p>Generate an HTML index of recent artifacts for easy browsing:</p>
+<p><code>bash
+python -m examples.generate_results_index --results results --plots plots --out results/index.html</code>
+```</p>
+<h2 id="metrics-to-report">Metrics to report</h2>
+<ul>
+<li>Time mean ± std (seconds)</li>
+<li>Iteration counts (mean)</li>
+<li>SpMV counts (Ax and ATx)</li>
+<li>Residual tolerances used (atol/btol)</li>
+</ul>
+<h2 id="tips">Tips</h2>
+<ul>
+<li>Use <code>--json</code> for machine-readable output</li>
+<li>Repeat runs ≥3 times; ignore the first if warming up</li>
+<li>Prefer auto mode for epsilon: <code>--eps auto</code></li>
+<li>If you see high RAM usage during sketching, provide <code>--spill-dir</code> to use a memmap buffer.</li>
+<li>For large dense problems or multi-socket servers, try <code>--precond-warmup-solves 2</code> to stabilize timings before PCG.</li>
+</ul></body></html>

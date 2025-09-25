@@ -1,0 +1,24 @@
+<!doctype html><html lang="en"><meta charset="utf-8"><title>Verification</title><style>body{font-family:system-ui,Segoe UI,Arial,sans-serif;margin:2rem;line-height:1.6;max-width:980px} pre,code{background:#f6f8fa;padding:.2rem .4rem;border-radius:4px}</style><body><h1 id="verification-of-downloads-interim">Verification of downloads (interim)</h1>
+<p>Until signed Windows wheels are published, you can verify artifacts manually:</p>
+<h2 id="wheels-hash">Wheels (hash)</h2>
+<ul>
+<li>Download the wheel and compute a SHA256 hash locally.</li>
+<li>Compare against a published hash in the release notes or CI artifact logs.</li>
+</ul>
+<h3 id="example-powershell">Example (PowerShell)</h3>
+<p><code>powershell
+Get-FileHash rcfd_pcg-0.0.2-py3-none-any.whl -Algorithm SHA256 | Format-List</code></p>
+<h3 id="example-posix">Example (POSIX)</h3>
+<p><code>bash
+shasum -a 256 rcfd_pcg-0.0.2-py3-none-any.whl</code></p>
+<h2 id="docker-image-digest">Docker image (digest)</h2>
+<ul>
+<li>When the CPU image is published, pull by digest:
+<code>bash
+docker pull yourorg/rcfd-pcg@sha256:&lt;digest&gt;</code></li>
+<li>Check <code>docker image inspect</code> and confirm the digest matches the release notes.</li>
+</ul>
+<h2 id="next-steps">Next steps</h2>
+<ul>
+<li>Provide signed Windows wheels and a simple verification page once publishing is automated.</li>
+</ul></body></html>

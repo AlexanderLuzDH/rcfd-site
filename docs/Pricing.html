@@ -1,0 +1,45 @@
+<!doctype html><html lang="en"><meta charset="utf-8"><title>Pricing</title><style>body{font-family:system-ui,Segoe UI,Arial,sans-serif;margin:2rem;line-height:1.6;max-width:980px} pre,code{background:#f6f8fa;padding:.2rem .4rem;border-radius:4px}</style><body><h1 id="pricing-terms-no-support">Pricing &amp; Terms (No Support)</h1>
+<p>RCFD‑PCG is self‑serve: no meetings, no tickets, no support. Prove value in ~10 minutes, use it in production offline.</p>
+<h2 id="free-community">Free (Community)</h2>
+<ul>
+<li><code>pip install rcfd-pcg</code></li>
+<li>CLI demo/doctor and full proof‑pack pipeline</li>
+<li>Docs + Troubleshooting</li>
+<li>GitHub issues: reproducible bugs only (attach <code>doctor --json</code> and proof‑pack JSON)</li>
+</ul>
+<p>What’s not included:
+- No guaranteed response, no SLAs, no integration help
+- Premium features (see Pro)</p>
+<h2 id="pro-no-support">Pro (No Support)</h2>
+<ul>
+<li>Unlock features with a license token in one env var: <code>RCFD_LICENSE</code></li>
+<li>Token format: signed JSON payload (offline) with expiry + feature bits</li>
+<li>Example payload fields: <code>{ "tier": "pro", "org": "Acme", "exp": 1750000000, "features": ["suite_export","proofpack_extended","artifact_signing","resource_controls","ci_playbooks","blockdiag_presets"] }</code></li>
+<li>Signature: HMAC‑SHA256 over canonical JSON; verification is fully offline. No telemetry, no pings.</li>
+<li>Unlocks that add value without support burden:</li>
+<li>Block‑diagonal preconditioner presets and guardrails (bigger‑d friendly)</li>
+<li>Large‑run helpers (suite export; consolidated proof‑pack across many configs)</li>
+<li>Extended proof‑pack (plots embedded, comparison tables, artifact signing)</li>
+<li>Spill‑to‑disk controls and concurrency knobs (resource efficiency)</li>
+<li>Playbook automation flags (one‑shot pipelines for CI)</li>
+<li>Terms: self‑serve; security patches and bugfix releases included; “no tickets” policy documented</li>
+</ul>
+<p>Suggested price: $1.5k/year per organization (unlimited seats; no tickets)</p>
+<h2 id="hosted-playground-optional">Hosted Playground (Optional)</h2>
+<ul>
+<li>Usage‑capped hosted runner that renders <code>proof_pack.html</code></li>
+<li>Free tier for tiny inputs; paid tier for higher monthly caps</li>
+<li>No support; strict request size/time limits; documented error codes</li>
+</ul>
+<h2 id="where-to-draw-the-line-free-vs-pro">Where to draw the line (Free vs Pro)</h2>
+<ul>
+<li>Free keeps everything shipped in 0.1.0 (to maximize adoption and word‑of‑mouth)</li>
+<li>Pro adds scale and productization:</li>
+<li>“More d, more runs, more plots” + “stronger preconditioner presets”</li>
+<li>“Better CI artifacts” (packed, signed, embeddable)</li>
+<li>“Frictionless pipelines” (batch scripts/flags)</li>
+</ul>
+<h2 id="how-to-buy">How to Buy</h2>
+<p>1) Evaluate locally: <code>pip install rcfd-pcg</code> → <code>python scripts/proof_pack_pipeline.py</code> → open <code>results/proof_pack.html</code>.
+2) If the proof shows wins in our recommended regimes, purchase a Pro token and set <code>RCFD_LICENSE</code>.</p>
+<p>If the proof‑pack doesn’t show wins for your regime, don’t buy.</p></body></html>

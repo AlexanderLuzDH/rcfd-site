@@ -1,0 +1,51 @@
+<!doctype html><html lang="en"><meta charset="utf-8"><title>API</title><style>body{font-family:system-ui,Segoe UI,Arial,sans-serif;margin:2rem;line-height:1.6;max-width:980px} pre,code{background:#f6f8fa;padding:.2rem .4rem;border-radius:4px}</style><body><h1 id="rcfd-pcg-api">RCFD-PCG API</h1>
+<p>This document summarizes the main public surfaces of the MVP.</p>
+<h2 id="python">Python</h2>
+<ul>
+<li>rcfd_pcg.build_rcfd_sketch(A, ridge_lambda, epsilon, ..., compression, oversampling, power_iters)</li>
+<li>Returns sketch matrix <code>B</code> with shape (ℓ, d)</li>
+<li>rcfd_pcg.rcfd_pcg_solve(A, b, ridge_lambda, epsilon, tol, max_iter, ...)</li>
+<li>Returns <code>(x, diagnostics)</code> if <code>return_diagnostics=True</code></li>
+<li>Diagnostics: <code>iterations</code>, <code>residual_norm</code>, <code>rhs_norm</code>, <code>sketch_rows</code>, <code>dimension</code>, <code>num_spmv_Ax</code>, <code>num_spmv_ATx</code>, <code>time_total</code>, <code>time_sketch</code>, <code>time_cholesky</code>, <code>time_pcg</code>, <code>bail_out</code> (bool), <code>bail_out_details</code> (indicator/threshold/dimension), optional <code>residual_history</code></li>
+<li>Extra controls: <code>dense_chunk_size</code> (int|None), <code>precond_type</code> ("chol"|"blockdiag"), <code>num_col_blocks</code> (int≥1), <code>spill_dir</code> (str|None), <code>precond_warmup_solves</code> (int), <code>bail_out_threshold</code> (float)</li>
+<li>rcfd_pcg.build_rcfd_preconditioner(A, ridge_lambda, epsilon, ...)</li>
+<li>Returns <code>(chol, meta)</code> where <code>chol=(c, lower)</code> suitable for <code>scipy.linalg.cho_solve</code></li>
+<li>rcfd_pcg.save_preconditioner(path, chol, meta) / load_preconditioner(path)</li>
+<li>Save now includes <code>precond_version</code> and <code>checksum</code>; load returns <code>checksum_ok</code> and <code>checksum_actual</code> in meta.</li>
+<li>rcfd_pcg.SyntheticProblem(...).make() → (A, b, x_true)</li>
+</ul>
+<p>Utilities
+- rcfd_pcg.util.choose_epsilon_auto(d)
+- rcfd_pcg.util.choose_compression_params(d, density=None)
+- rcfd_pcg.util.choose_shrink_multiple(d)
+- rcfd_pcg.util.recommend_rcfd_params(d, density=None, sparse=False) → {epsilon, compression, oversampling, power_iters, threads, sketch_dtype}
+- rcfd_pcg.util.set_cpu_affinity_prefer_cores(core_ids) → bool (best-effort pinning)</p>
+<p>SciPy drop-in
+- rcfd_pcg.linop.make_normal_operator(A, ridge_lambda)
+- rcfd_pcg.linop.make_cholesky_preconditioner_operator(chol)
+- rcfd_pcg.linop.cg_solve_normal_eq(A, b, ridge_lambda, tol, max_iter, use_rcfd_preconditioner, rcfd_eps)
+  - Uses SciPy CG with explicit <code>atol=0</code> to avoid deprecation warnings; returns <code>(x, diagnostics)</code></p>
+<p>scikit-learn style
+- rcfd_pcg.sklearn.RCFDRidge(lam=0.0, eps=0.25, tol=1e-6, max_iter=200, fit_intercept=False, ..., auto_bail_out=True, bail_out_threshold=5.0)
+  - Methods: <code>fit(X, y)</code>, <code>predict(X)</code>, <code>get_params()</code>, <code>set_params(**params)</code>
+  - Persistence: <code>save(path)</code>, <code>load(path)</code> (requires <code>joblib</code>); <code>diagnostics_</code> exposes the same solver metadata including <code>bail_out</code>.</p>
+<p>PyTorch
+- rcfd_pcg.torch_api.cg_solve_normal_eq_torch(A: torch.Tensor, b: torch.Tensor, ridge_lambda=0.0, tol=1e-6, max_iter=200, record_history=False, preconditioner_mode="none|diag")
+  - Returns <code>(x: torch.Tensor, diagnostics)</code>; autograd-safe path using torch ops only. Optional diagonal preconditioner prototype via <code>preconditioner_mode="diag"</code>.</p>
+<p>GPU (prototype)
+- rcfd_pcg.gpu.build_rcfd_sketch_gpu(A, ridge_lambda, epsilon=0.25, device=None) → cupy.ndarray
+- rcfd_pcg.gpu.rcfd_pcg_solve_gpu(A, b, ridge_lambda, epsilon=0.25, tol=1e-6, max_iter=200, record_history=False, preconditioner_mode="none|diag", device=None)
+  - Requires CuPy. Intended for experimentation; for large d, prefer CPU randomized compression.</p>
+<h2 id="cli">CLI</h2>
+<ul>
+<li>rcfd-pcg: solver runner with JSON/human output; supports <code>--eps auto</code>, preconditioner save/load, SpMV counts, and timing. Compression options include <code>auto</code>, <code>eigh</code>, <code>eigh_inc</code>, and <code>rand</code>. Windows-friendly flags: <code>--ascii</code>, <code>--ascii-default</code>.</li>
+<li>rcfd-bench: compares RCFD vs LSQR/LSMR/CGNE; supports preconditioner reuse</li>
+<li>rcfd-ablate: sweeps epsilon/oversampling/power_iters; can write CSV</li>
+<li>Grids: <code>--sketch_dtype_grid</code>, <code>--num_passes_grid</code>, <code>--threads_grid</code>; supports <code>--json</code> and <code>--log-json</code></li>
+</ul>
+<h2 id="defaults-auto">Defaults (auto)</h2>
+<ul>
+<li>Epsilon: <code>choose_epsilon_auto(d)</code></li>
+<li>Compression: <code>auto</code> picks eigendecomp for small d and randomized for larger d; <code>eigh_inc</code> enables incremental eig updates for buffer compression; sparse matrices use fewer power iterations by default. Auto mode may run a small probe to estimate spectral spread and adjust <code>power_iters</code> and <code>oversampling</code> accordingly (e.g., bump to 1/12 for high spread around moderate d).</li>
+<li>Shrink buffer size: <code>choose_shrink_multiple(d)</code></li>
+</ul></body></html>

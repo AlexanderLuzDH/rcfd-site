@@ -1,0 +1,60 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>RCFD‑PCG — Ten‑Minute Proof</title>
+  <style>
+    body { font-family: system-ui, Segoe UI, Arial, sans-serif; margin: 2rem; line-height: 1.5; }
+    code, pre { background:#f6f8fa; padding: .2rem .4rem; border-radius: 4px; }
+    pre { padding: 1rem; overflow:auto; }
+    .cta { display: inline-block; background:#0d6efd; color:#fff; padding:.6rem 1rem; border-radius:6px; text-decoration:none; }
+    .row { display:flex; gap:2rem; flex-wrap:wrap; }
+    .card { flex:1 1 320px; border:1px solid #e5e7eb; border-radius:8px; padding:1rem; }
+    .muted { color:#6b7280; }
+  </style>
+  <link rel="icon" href="https://raw.githubusercontent.com/github/explore/80688e429a7d4ef2fca1e82350fe8e3517d3494d/topics/python/python.png">
+  <meta name="description" content="RCFD‑PCG delivers a deterministic preconditioner for tall‑skinny least‑squares with a ten‑minute proof you can run."/>
+</head>
+<body>
+  <h1>RCFD‑PCG 0.1.0 (GA)</h1>
+  <p class="muted">Deterministic preconditioning for tall‑skinny least‑squares. Prove it on your laptop in ten minutes.</p>
+  <p>
+    <a class="cta" href="https://pypi.org/project/rcfd-pcg/">PyPI: rcfd‑pcg</a>
+    &nbsp;•&nbsp;
+    <a class="cta" style="background:#10b981" href="https://github.com/AlexanderLuzDH/RCFD">GitHub</a>
+  </p>
+
+  <h2>Quickstart</h2>
+  <p><strong>Product promise:</strong> Free, self-serve. No support, no meetings. Upgrade to Pro to unlock advanced features — still no support.<br/>If the proof-pack doesn’t show wins in our recommended regimes, don’t buy.</p>
+  <pre><code>pip install rcfd-pcg==0.1.0
+python scripts/proof_pack_pipeline.py
+# Open the summary: results/proof_pack.html</code></pre>
+
+  <div class="row">
+    <div class="card">
+      <h3>One‑Command Proof</h3>
+      <p>Run the built‑in pipeline to generate demo + benchmarks + real datasets, then open the HTML summary.</p>
+      <pre><code>python scripts/proof_pack_pipeline.py</code></pre>
+      <p><a href="../results/proof_pack.html">View latest proof_pack.html</a> (from this repo)</p>
+    </div>
+    <div class="card">
+      <h3>Docker (CPU)</h3>
+      <pre><code>docker pull ghcr.io/alexanderluzdh/rcfd:latest
+docker run --rm -v ${PWD}:/work -w /work ghcr.io/alexanderluzdh/rcfd:latest \
+  python -m rcfd_pcg.cli demo --out results/demo_report.json --html results/demo_report.html</code></pre>
+    </div>
+  </div>
+
+  <h2>Docs</h2>
+  <ul>
+    <li><a href="../README.md">README</a></li>
+    <li><a href="./ProofPack.md">Proof Pack Runbook</a></li>
+    <li><a href="./Pricing.md">Pricing (No Support)</a></li>
+    <li><a href="./PlaygroundSpec.md">Hosted Playground Spec</a></li>
+    <li><a href="./ReleaseNotes-0.1.0.md">Release Notes 0.1.0</a></li>
+  </ul>
+
+  <p class="muted">GitHub Pages serves the <code>docs/</code> folder. Configure at: Repository → Settings → Pages → Build and deployment → Source: “Deploy from a branch”, Branch: <code>main</code>, Folder: <code>/docs</code>.</p>
+</body>
+</html>

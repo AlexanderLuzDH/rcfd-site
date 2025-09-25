@@ -1,0 +1,18 @@
+<!doctype html><html lang="en"><meta charset="utf-8"><title>WeightsWLS</title><style>body{font-family:system-ui,Segoe UI,Arial,sans-serif;margin:2rem;line-height:1.6;max-width:980px} pre,code{background:#f6f8fa;padding:.2rem .4rem;border-radius:4px}</style><body><h1 id="weights-and-weighted-least-squares-wls">Weights and Weighted Least Squares (WLS)</h1>
+<p>RCFD-PCG targets standard least squares and ridge-regularized variants. Many recsys and observational pipelines use weights (per-row or per-example), leading to WLS.</p>
+<h2 id="current-status">Current status</h2>
+<ul>
+<li>WLS is not yet a first-class API. You can emulate WLS by scaling rows of <code>A</code> and entries of <code>b</code> by <code>sqrt(w_i)</code> before calling the solver.</li>
+<li>Preconditioner construction will incorporate the scaled <code>A</code>, so reuse should be performed with the same weights.</li>
+</ul>
+<h2 id="checklist-for-evaluation">Checklist for evaluation</h2>
+<ul>
+<li>Verify that weights are non-negative and well-scaled.</li>
+<li>Normalize weights to have mean ≈ 1 to avoid extreme conditioning.</li>
+<li>If weights vary over orders of magnitude, consider a slightly larger epsilon or enabling 2 passes to stabilize compression.</li>
+</ul>
+<h2 id="roadmap">Roadmap</h2>
+<ul>
+<li>Add a thin WLS wrapper that accepts <code>sample_weight</code> and applies safe scaling with basic validation.</li>
+<li>Extend benchmarks to include WLS scenarios common in recsys and ads.</li>
+</ul></body></html>
